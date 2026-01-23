@@ -8,3 +8,4 @@ langchain-openai
 unstructured
 python-multipart
 python-dotenv
+alembic

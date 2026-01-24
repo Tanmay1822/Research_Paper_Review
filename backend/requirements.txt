@@ -8,3 +8,5 @@ langchain-openai
 unstructured
 python-multipart
 python-dotenv
+psycopg2-binary
+uvicorn[standard]

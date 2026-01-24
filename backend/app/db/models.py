@@ -9,3 +9,12 @@ class TestItem(Base):
     name = Column(String, index=True)
     description = Column(String)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class TestItem3(Base):
+    __tablename__ = "test_items3"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    description = Column(String)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

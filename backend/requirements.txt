@@ -5,7 +5,9 @@ psycopg2-binary
 pgvector
 langchain
 langchain-openai
-unstructured
+langchain-text-splitters
 python-multipart
 python-dotenv
 alembic
+uvicorn[standard]
+pypdf

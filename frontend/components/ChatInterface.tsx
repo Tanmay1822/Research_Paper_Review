@@ -85,7 +85,7 @@ export default function ChatInterface({
                     <button
                       key={j}
                       onClick={() => onCitationClick?.(c.source, c.page)}
-                      className="text-xs px-2 py-0.5 rounded bg-gray-200 hover:bg-gray-300 text-gray-700"
+                      className="text-xs px-2 py-1 rounded bg-blue-100 hover:bg-blue-200 hover:ring-2 hover:ring-blue-400 text-blue-800 cursor-pointer transition-all duration-150"
                     >
                       [{c.source} p.{c.page}]
                     </button>

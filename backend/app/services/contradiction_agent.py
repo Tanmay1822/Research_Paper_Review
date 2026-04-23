@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
 
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -35,14 +35,14 @@ class ContradictionReport:
     contradictions: list[ContradictionItem]
 
 
-def _get_llm() -> ChatOpenAI:
-    """Lazy-init OpenAI LLM."""
-    api_key = os.getenv("OPENAI_API_KEY")
+def _get_llm() -> ChatGoogleGenerativeAI:
+    """Lazy-init Gemini LLM."""
+    api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        raise RuntimeError("OPENAI_API_KEY not set in environment")
-    return ChatOpenAI(
-        model="gpt-4o-mini",
-        api_key=api_key,
+        raise RuntimeError("GEMINI_API_KEY not set in environment")
+    return ChatGoogleGenerativeAI(
+        model="gemini-2.5-flash",
+        google_api_key=api_key,
         temperature=0,
     )
 

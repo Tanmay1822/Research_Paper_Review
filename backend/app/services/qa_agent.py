@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import Literal
 from uuid import UUID
 
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_core.messages import HumanMessage, SystemMessage
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -36,24 +36,24 @@ class SynthesisResult:
     citations: list[dict[str, str | int]]
 
 
-def _get_llm() -> ChatOpenAI:
-    """Lazy-init OpenAI LLM."""
-    api_key = os.getenv("OPENAI_API_KEY")
+def _get_llm() -> ChatGoogleGenerativeAI:
+    """Lazy-init Gemini LLM."""
+    api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        raise RuntimeError("OPENAI_API_KEY not set in environment")
-    return ChatOpenAI(
-        model="gpt-4o-mini",
-        api_key=api_key,
+        raise RuntimeError("GEMINI_API_KEY not set in environment")
+    return ChatGoogleGenerativeAI(
+        model="gemini-2.5-flash",
+        google_api_key=api_key,
         temperature=0,
     )
 
 
-def _get_embeddings() -> OpenAIEmbeddings:
-    """Lazy-init OpenAI embeddings."""
-    api_key = os.getenv("OPENAI_API_KEY")
+def _get_embeddings() -> GoogleGenerativeAIEmbeddings:
+    """Lazy-init Gemini embeddings."""
+    api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        raise RuntimeError("OPENAI_API_KEY not set in environment")
-    return OpenAIEmbeddings(model="text-embedding-ada-002", api_key=api_key)
+        raise RuntimeError("GEMINI_API_KEY not set in environment")
+    return GoogleGenerativeAIEmbeddings(model="gemini-embedding-001", google_api_key=api_key)
 
 
 def classify_intent(question: str) -> IntentType:
@@ -107,7 +107,14 @@ def route_summary_scope(db: Session, paper_ids: list[UUID]) -> str:
 def route_fact_lookup(db: Session, paper_ids: list[UUID], query: str) -> list[RetrievedChunk]:
     """Embed query, run vector search on DocumentChunks, return top 5 chunks."""
     embeddings = _get_embeddings()
-    query_embedding = embeddings.embed_query(query)
+    query_embedding_raw = embeddings.embed_query(query)
+
+    # Pad or truncate to match pgvector dimension (1536) used in DocumentChunk.embedding
+    target_dim = 1536
+    if len(query_embedding_raw) < target_dim:
+        query_embedding = query_embedding_raw + [0.0] * (target_dim - len(query_embedding_raw))
+    else:
+        query_embedding = query_embedding_raw[:target_dim]
 
     stmt = (
         select(models.DocumentChunk, models.Paper)
@@ -150,6 +157,7 @@ def synthesize_answer(
     context: str,
     chunks: list[RetrievedChunk],
     intent: IntentType,
+    chat_history: list[tuple[str, str]] | None = None,
 ) -> SynthesisResult:
     """
     Take retrieved context and synthesize a JSON response with answer and citations.
@@ -167,7 +175,13 @@ Your response MUST be valid JSON with this exact schema:
 - citations: Array of objects. Each must have source (filename), page (int), quote (exact snippet).
 Use only filenames and pages that appear in the context. If no specific quote applies, use a short relevant snippet."""
 
-    user_content = f"Context:\n{context}\n\nRelevant chunks:\n{chunk_str}\n\nQuestion: {query}"
+    history_str = ""
+    if chat_history:
+        history_str = "\n\nPrevious Q&A:\n" + "\n".join(
+            f"Q: {q}\nA: {a}" for q, a in chat_history[-5:]  # last 5 turns
+        ) + "\n\n"
+
+    user_content = f"Context:\n{context}\n\nRelevant chunks:\n{chunk_str}\n{history_str}Question: {query}"
     response = llm.invoke([
         SystemMessage(content=system),
         HumanMessage(content=user_content),
@@ -192,6 +206,7 @@ def run_qa(
     db: Session,
     query: str,
     paper_ids: list[UUID],
+    chat_history: list[tuple[str, str]] | None = None,
 ) -> SynthesisResult:
     """Orchestrate Router -> Route -> Synthesis and return the result."""
     intent = classify_intent(query)
@@ -220,4 +235,4 @@ Respond in plain text (you will be wrapped in synthesis step). Be explicit about
         cmp_response = llm.invoke([HumanMessage(content=cmp_prompt)])
         context = cmp_response.content or context
 
-    return synthesize_answer(query, context, chunks, intent)
+    return synthesize_answer(query, context, chunks, intent, chat_history=chat_history)

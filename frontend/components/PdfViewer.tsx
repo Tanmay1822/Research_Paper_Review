@@ -5,22 +5,20 @@ import type { Paper } from "./Sidebar";
 
 interface PdfViewerProps {
   papers: Paper[];
-  selectedSource: string | null;
-  selectedPage: number | null;
+  activePdfUrl: string | null;
+  activePage: number;
 }
 
 export default function PdfViewer({
   papers,
-  selectedSource,
-  selectedPage,
+  activePdfUrl,
+  activePage,
 }: PdfViewerProps) {
-  const targetPaper = selectedSource
-    ? papers.find((p) => p.filename === selectedSource)
-    : papers[0];
-  const blobUrl = targetPaper?.blobUrl;
-
-  const pdfUrl = blobUrl
-    ? `${blobUrl}${selectedPage ? `#page=${selectedPage}` : ""}`
+  const targetPaper = papers.find(
+    (p) => p.pdfUrl === activePdfUrl || p.blobUrl === activePdfUrl
+  );
+  const pdfSrc = activePdfUrl
+    ? `${activePdfUrl}#page=${activePage}`
     : null;
 
   return (
@@ -32,11 +30,11 @@ export default function PdfViewer({
         )}
       </div>
       <div className="flex-1 overflow-hidden flex items-center justify-center p-4">
-        {pdfUrl ? (
+        {pdfSrc ? (
           <embed
-            src={pdfUrl}
+            src={pdfSrc}
             type="application/pdf"
-            className="w-full h-full rounded border border-gray-200"
+            className="w-full h-full rounded border border-gray-200 min-h-0"
             title="PDF"
           />
         ) : (

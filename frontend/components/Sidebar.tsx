@@ -10,6 +10,8 @@ export interface Paper {
   title: string | null;
   category: string;
   blobUrl?: string;
+  /** Backend-served PDF URL for citation sync */
+  pdfUrl?: string;
 }
 
 interface SidebarProps {
@@ -36,10 +38,10 @@ export default function Sidebar({ papers, onPapersChange }: SidebarProps) {
         onPapersChange([
           ...papers,
           {
-            id: res.id,
-            filename: res.filename,
-            title: res.title,
-            category: res.category,
+            id: res.task_id,
+            filename: file.name,
+            title: file.name.replace(".pdf", ""),
+            category: "Processing",
             blobUrl,
           },
         ]);

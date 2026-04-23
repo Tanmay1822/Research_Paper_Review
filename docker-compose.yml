@@ -10,16 +10,39 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
   api:
     build: ./backend
     ports:
       - "8000:8000"
     depends_on:
       - db
+      - redis
     env_file:
       - ./backend/.env
     environment:
       - DATABASE_URL=postgresql://admin:password@db:5432/rpa_db
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    volumes:
+      - ./backend:/app
+
+  worker:
+    build: ./backend
+    command: celery -A app.celery_app:celery_app worker --loglevel=info
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - ./backend/.env
+    environment:
+      - DATABASE_URL=postgresql://admin:password@db:5432/rpa_db
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
     volumes:
       - ./backend:/app
 

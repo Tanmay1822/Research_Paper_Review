@@ -1,11 +1,11 @@
-import { getAuthHeaders } from "./auth";
-
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export interface AuthResponse {
   user_id: string;
   email: string;
 }
+
+export type ReadingStatus = "to_read" | "reading" | "done";
 
 export interface PaperListItem {
   id: string;
@@ -14,6 +14,8 @@ export interface PaperListItem {
   category: string;
   status: string;
   folder_id: string | null;
+  reading_status: ReadingStatus | null;
+  tags: string[];
 }
 
 export interface PaperDetail extends PaperListItem {
@@ -129,17 +131,12 @@ interface ApiErrorEnvelope {
   detail?: unknown;
 }
 
-function authHeaders(): HeadersInit {
-  return getAuthHeaders();
-}
-
 function withAuth(init: RequestInit = {}): RequestInit {
   return {
     credentials: "include",
     ...init,
     headers: {
       ...(init.headers ?? {}),
-      ...authHeaders(),
     },
   };
 }
@@ -404,5 +401,103 @@ export async function fetchComparisonMatrix(paperIds: string[]): Promise<MatrixR
   if (!res.ok) {
     throw await parseApiError(res, "Unable to build comparison matrix.");
   }
+  return res.json();
+}
+
+// ── Research Gap Finder ──────────────────────────────────────────────────────
+
+export interface GapReport {
+  gaps: string[];
+  future_directions: string[];
+}
+
+export async function findResearchGaps(paperIds: string[]): Promise<GapReport> {
+  const res = await fetch(`${API_BASE}/api/find-research-gaps`, withAuth({
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ paper_ids: paperIds }),
+  }));
+  if (!res.ok) throw await parseApiError(res, "Gap analysis failed. Please try again.");
+  return res.json();
+}
+
+// ── Literature Review Generator ──────────────────────────────────────────────
+
+export async function generateLiteratureReview(paperIds: string[]): Promise<{ draft: string }> {
+  const res = await fetch(`${API_BASE}/api/generate-literature-review`, withAuth({
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ paper_ids: paperIds }),
+  }));
+  if (!res.ok) throw await parseApiError(res, "Literature review generation failed. Please try again.");
+  return res.json();
+}
+
+// ── Reading Status + Tags ────────────────────────────────────────────────────
+
+export async function updateReadingStatus(paperId: string, status: ReadingStatus | null): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/papers/${paperId}/reading-status`, withAuth({
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reading_status: status }),
+  }));
+  if (!res.ok) throw await parseApiError(res, "Unable to update reading status.");
+}
+
+export async function updateTags(paperId: string, tags: string[]): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/papers/${paperId}/tags`, withAuth({
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tags }),
+  }));
+  if (!res.ok) throw await parseApiError(res, "Unable to update tags.");
+}
+
+// ── Semantic Search ──────────────────────────────────────────────────────────
+
+export interface SemanticSearchResult {
+  paper_id: string;
+  filename: string;
+  title: string | null;
+  page_num: number;
+  excerpt: string;
+}
+
+export async function semanticSearch(query: string, limit = 8): Promise<SemanticSearchResult[]> {
+  const res = await fetch(`${API_BASE}/api/papers/semantic-search`, withAuth({
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query, limit }),
+  }));
+  if (!res.ok) throw await parseApiError(res, "Search failed. Please try again.");
+  return res.json();
+}
+
+// ── Citation Network ─────────────────────────────────────────────────────────
+
+export interface NetworkNode {
+  id: string;
+  title: string;
+  filename: string;
+  category: string | null;
+}
+
+export interface NetworkEdge {
+  source: string;
+  target: string;
+}
+
+export interface CitationNetwork {
+  nodes: NetworkNode[];
+  edges: NetworkEdge[];
+}
+
+export async function fetchCitationNetwork(paperIds: string[]): Promise<CitationNetwork> {
+  const res = await fetch(`${API_BASE}/api/papers/citation-network`, withAuth({
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ paper_ids: paperIds }),
+  }));
+  if (!res.ok) throw await parseApiError(res, "Unable to build citation network.");
   return res.json();
 }

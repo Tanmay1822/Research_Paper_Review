@@ -53,16 +53,16 @@ export default function ChatInterface({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white">
-      <div className="p-3 border-b border-gray-200">
-        <h2 className="text-sm font-semibold text-gray-800">Chat</h2>
+    <div className="flex h-full flex-col bg-[var(--surface-elevated)]">
+      <div className="border-b border-[var(--border)] p-3">
+        <h2 className="text-sm font-semibold text-[var(--foreground)]">Chat</h2>
         {paperIds.length === 0 && (
-          <p className="text-xs text-gray-500">Upload papers to chat.</p>
+          <p className="text-xs text-[var(--muted)]">Upload papers to chat.</p>
         )}
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
-          <p className="text-sm text-gray-500 text-center py-8">
+          <p className="py-8 text-center text-sm text-[var(--muted)]">
             Ask a question about your uploaded papers.
           </p>
         )}
@@ -74,8 +74,8 @@ export default function ChatInterface({
             <div
               className={`max-w-[85%] rounded-lg px-3 py-2 ${
                 m.role === "user"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-800"
+                  ? "bg-[var(--primary)] text-[var(--foreground)]"
+                  : "bg-[var(--surface)] text-[var(--foreground)]"
               }`}
             >
               <p className="text-sm whitespace-pre-wrap">{m.content}</p>
@@ -85,7 +85,7 @@ export default function ChatInterface({
                     <button
                       key={j}
                       onClick={() => onCitationClick?.(c.source, c.page)}
-                      className="text-xs px-2 py-1 rounded bg-blue-100 hover:bg-blue-200 hover:ring-2 hover:ring-blue-400 text-blue-800 cursor-pointer transition-all duration-150"
+                      className="cursor-pointer rounded bg-[var(--accent)] px-2 py-1 text-xs text-[var(--foreground)] transition-all duration-150 hover:bg-[var(--surface)] hover:ring-2 hover:ring-[var(--primary)]/40"
                     >
                       [{c.source} p.{c.page}]
                     </button>
@@ -97,13 +97,13 @@ export default function ChatInterface({
         ))}
         {loading && (
           <div className="flex justify-start">
-            <div className="rounded-lg px-3 py-2 bg-gray-100">
-              <Loader2 className="w-5 h-5 text-gray-500 animate-spin" />
+            <div className="rounded-lg bg-[var(--surface)] px-3 py-2">
+              <Loader2 className="h-5 w-5 animate-spin text-[var(--muted)]" />
             </div>
           </div>
         )}
       </div>
-      <form onSubmit={handleSubmit} className="p-3 border-t border-gray-200">
+      <form onSubmit={handleSubmit} className="border-t border-[var(--border)] p-3">
         <div className="flex gap-2">
           <input
             type="text"
@@ -111,12 +111,12 @@ export default function ChatInterface({
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask a question..."
             disabled={paperIds.length === 0 || loading}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/35 disabled:opacity-50"
           />
           <button
             type="submit"
             disabled={!input.trim() || paperIds.length === 0 || loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-lg bg-[var(--primary)] px-4 py-2 text-[var(--foreground)] hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Send className="w-5 h-5" />
           </button>

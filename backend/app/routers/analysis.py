@@ -11,6 +11,8 @@ from sqlalchemy.orm import Session
 from app.db import database, models
 from app.routers.auth import get_current_user
 from app.services.contradiction_agent import detect_contradictions
+from app.services.gap_finder import find_research_gaps
+from app.services.lit_review import generate_literature_review
 from app.tasks.ingestion_tasks import extract_knowledge_card_task
 
 
@@ -99,6 +101,61 @@ def analyze_contradictions(
         agreements=report.agreements,
         contradictions=contradictions,
     )
+
+
+class GapRequest(BaseModel):
+    paper_ids: list[UUID] = Field(..., min_length=1)
+
+
+class GapReportResponse(BaseModel):
+    gaps: list[str]
+    future_directions: list[str]
+
+
+class LitReviewRequest(BaseModel):
+    paper_ids: list[UUID] = Field(..., min_length=2, max_length=12)
+
+
+class LitReviewResponse(BaseModel):
+    draft: str
+
+
+@router.post("/find-research-gaps", response_model=GapReportResponse)
+def find_gaps(
+    body: GapRequest,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user),
+) -> GapReportResponse:
+    """Identify research gaps from the selected papers' knowledge cards."""
+    _ensure_papers_owned_by_user(db, body.paper_ids, current_user.id)
+    try:
+        report = find_research_gaps(db, body.paper_ids)
+    except RuntimeError as e:
+        if "OPENAI_API_KEY" in str(e):
+            raise HTTPException(503, str(e)) from e
+        raise HTTPException(502, f"Gap analysis error: {e}") from e
+    except Exception as e:
+        raise HTTPException(500, f"Internal error: {e}") from e
+    return GapReportResponse(gaps=report.gaps, future_directions=report.future_directions)
+
+
+@router.post("/generate-literature-review", response_model=LitReviewResponse)
+def literature_review(
+    body: LitReviewRequest,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user),
+) -> LitReviewResponse:
+    """Generate a Related Work / Literature Review draft for the selected papers."""
+    _ensure_papers_owned_by_user(db, body.paper_ids, current_user.id)
+    try:
+        draft = generate_literature_review(db, body.paper_ids)
+    except RuntimeError as e:
+        if "OPENAI_API_KEY" in str(e):
+            raise HTTPException(503, str(e)) from e
+        raise HTTPException(502, f"Literature review generation error: {e}") from e
+    except Exception as e:
+        raise HTTPException(500, f"Internal error: {e}") from e
+    return LitReviewResponse(draft=draft)
 
 
 @router.post("/papers/bulk-extract", response_model=BulkExtractResponse)

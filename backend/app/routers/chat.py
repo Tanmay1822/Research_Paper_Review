@@ -114,7 +114,7 @@ def chat(
     try:
         result = run_qa(db, body.query, body.paper_ids, chat_history=chat_history)
     except RuntimeError as e:
-        if "GEMINI_API_KEY" in str(e):
+        if "OPENAI_API_KEY" in str(e):
             raise HTTPException(503, str(e)) from e
         raise HTTPException(502, f"QA pipeline error: {e}") from e
     except Exception as e:

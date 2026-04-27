@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import Literal
 from uuid import UUID
 
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_core.messages import HumanMessage, SystemMessage
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -37,24 +37,20 @@ class SynthesisResult:
     suggested_questions: list[str]
 
 
-def _get_llm() -> ChatGoogleGenerativeAI:
-    """Lazy-init Gemini LLM."""
-    api_key = os.getenv("GEMINI_API_KEY")
+def _get_llm() -> ChatOpenAI:
+    """Lazy-init OpenAI LLM."""
+    api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        raise RuntimeError("GEMINI_API_KEY not set in environment")
-    return ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
-        google_api_key=api_key,
-        temperature=0,
-    )
+        raise RuntimeError("OPENAI_API_KEY not set in environment")
+    return ChatOpenAI(model="gpt-4o-mini", temperature=0, openai_api_key=api_key)
 
 
-def _get_embeddings() -> GoogleGenerativeAIEmbeddings:
-    """Lazy-init Gemini embeddings."""
-    api_key = os.getenv("GEMINI_API_KEY")
+def _get_embeddings() -> OpenAIEmbeddings:
+    """Lazy-init OpenAI embeddings (text-embedding-3-small, 1536-dim)."""
+    api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        raise RuntimeError("GEMINI_API_KEY not set in environment")
-    return GoogleGenerativeAIEmbeddings(model="gemini-embedding-001", google_api_key=api_key)
+        raise RuntimeError("OPENAI_API_KEY not set in environment")
+    return OpenAIEmbeddings(model="text-embedding-3-small", openai_api_key=api_key)
 
 
 def classify_intent(question: str) -> IntentType:

@@ -38,52 +38,52 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--background)] px-4">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] p-8 shadow-lg shadow-[rgba(60,53,47,0.08)]">
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center">
-              <LogIn className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 rounded-xl bg-[var(--primary)] flex items-center justify-center">
+              <LogIn className="w-6 h-6 text-[var(--foreground)]" />
             </div>
-            <h1 className="text-xl font-semibold text-slate-900">Sign in</h1>
+            <h1 className="text-xl font-semibold text-[var(--foreground)]">Sign in</h1>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+              <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">Email</label>
               <input
                 type="email"
                 name="email"
                 required
                 autoComplete="email"
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
+                className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/35 focus:border-transparent transition-shadow"
                 placeholder="you@example.com"
                 suppressHydrationWarning
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+              <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">Password</label>
               <input
                 type="password"
                 name="password"
                 required
                 autoComplete="current-password"
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
+                className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/35 focus:border-transparent transition-shadow"
                 suppressHydrationWarning
               />
             </div>
             {error && (
-              <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
+              <p className="rounded-lg bg-[var(--danger-bg)] px-3 py-2 text-sm text-[var(--danger)]">{error}</p>
             )}
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full rounded-xl bg-[var(--primary)] py-3 font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
               suppressHydrationWarning
             >
               {loading ? "Signing in…" : "Sign in"}
             </button>
           </form>
-          <p className="mt-4 text-center text-sm text-slate-600">
+          <p className="mt-4 text-center text-sm text-[var(--muted)]">
             Don&apos;t have an account?{" "}
-            <Link href="/signup" className="text-indigo-600 hover:underline font-medium">
+            <Link href="/signup" className="font-medium text-[var(--cta)] hover:underline">
               Sign up
             </Link>
           </p>

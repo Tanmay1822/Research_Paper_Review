@@ -12,10 +12,12 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import database, models
 from app.routers.auth import get_current_user
+from app.services.citation_parser import build_citation_network
 
 router = APIRouter(prefix="/api", tags=["papers"])
 UPLOADS_DIR = Path(__file__).resolve().parent.parent.parent / "uploads"
@@ -86,6 +88,8 @@ class PaperListItem(BaseModel):
     category: str
     status: str
     folder_id: str | None
+    reading_status: str | None
+    tags: list[str]
 
 
 class RelatedPaperItem(BaseModel):
@@ -201,6 +205,7 @@ def list_papers(
             category = raw_category.value if hasattr(raw_category, "value") else str(raw_category)
         raw_status = paper.status
         status = raw_status.value if hasattr(raw_status, "value") else str(raw_status)
+        rs = paper.reading_status
         items.append(
             PaperListItem(
                 id=str(paper.id),
@@ -209,6 +214,8 @@ def list_papers(
                 category=category,
                 status=status,
                 folder_id=str(paper.folder_id) if paper.folder_id else None,
+                reading_status=rs.value if rs else None,
+                tags=paper.tags or [],
             )
         )
     return items
@@ -475,3 +482,140 @@ def bulk_delete_papers(
         db.delete(paper)
     db.commit()
     return {"deleted_count": len(papers)}
+
+
+# ── Reading Status ──────────────────────────────────────────────────────────
+
+class ReadingStatusUpdate(BaseModel):
+    reading_status: str | None = Field(None, pattern="^(to_read|reading|done)$")
+
+
+@router.patch("/papers/{paper_id}/reading-status")
+def update_reading_status(
+    paper_id: UUID,
+    body: ReadingStatusUpdate,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user),
+) -> dict[str, str | None]:
+    paper = db.query(models.Paper).filter(models.Paper.id == paper_id).first()
+    if not paper or paper.user_id != current_user.id:
+        raise HTTPException(404, "Paper not found")
+    if body.reading_status is None:
+        paper.reading_status = None
+    else:
+        paper.reading_status = models.ReadingStatus(body.reading_status)
+    db.commit()
+    return {"reading_status": body.reading_status}
+
+
+# ── Tags ────────────────────────────────────────────────────────────────────
+
+class TagsUpdate(BaseModel):
+    tags: list[str] = Field(default_factory=list, max_length=10)
+
+
+@router.patch("/papers/{paper_id}/tags")
+def update_tags(
+    paper_id: UUID,
+    body: TagsUpdate,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user),
+) -> dict[str, list[str]]:
+    paper = db.query(models.Paper).filter(models.Paper.id == paper_id).first()
+    if not paper or paper.user_id != current_user.id:
+        raise HTTPException(404, "Paper not found")
+    cleaned = [t.strip()[:64] for t in body.tags if t.strip()][:10]
+    paper.tags = cleaned or None
+    db.commit()
+    return {"tags": cleaned}
+
+
+# ── Semantic Search ─────────────────────────────────────────────────────────
+
+class SemanticSearchRequest(BaseModel):
+    query: str = Field(..., min_length=1, max_length=512)
+    limit: int = Field(default=8, ge=1, le=20)
+
+
+class SemanticSearchResult(BaseModel):
+    paper_id: str
+    filename: str
+    title: str | None
+    page_num: int
+    excerpt: str
+
+
+@router.post("/papers/semantic-search", response_model=list[SemanticSearchResult])
+def semantic_search(
+    body: SemanticSearchRequest,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user),
+) -> list[SemanticSearchResult]:
+    """Embed the query and return the most semantically relevant paper chunks."""
+    import os
+    from langchain_openai import OpenAIEmbeddings
+
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise HTTPException(503, "OPENAI_API_KEY not set")
+
+    embeddings_model = OpenAIEmbeddings(model="text-embedding-3-small", openai_api_key=api_key)
+    raw = embeddings_model.embed_query(body.query)
+    target_dim = 1536
+    query_vec = raw[:target_dim] if len(raw) >= target_dim else raw + [0.0] * (target_dim - len(raw))
+
+    user_paper_ids = [
+        p.id for p in db.query(models.Paper.id)
+        .filter(models.Paper.user_id == current_user.id)
+        .all()
+    ]
+    if not user_paper_ids:
+        return []
+
+    stmt = (
+        select(models.DocumentChunk, models.Paper)
+        .join(models.Paper, models.DocumentChunk.paper_id == models.Paper.id)
+        .where(
+            models.DocumentChunk.paper_id.in_(user_paper_ids),
+            models.DocumentChunk.embedding.isnot(None),
+        )
+        .order_by(models.DocumentChunk.embedding.cosine_distance(query_vec))
+        .limit(body.limit)
+    )
+    rows = db.execute(stmt).all()
+
+    seen: set[str] = set()
+    results: list[SemanticSearchResult] = []
+    for chunk, paper in rows:
+        key = f"{paper.id}-{chunk.page_num}"
+        if key in seen:
+            continue
+        seen.add(key)
+        results.append(SemanticSearchResult(
+            paper_id=str(paper.id),
+            filename=paper.filename,
+            title=paper.title,
+            page_num=chunk.page_num,
+            excerpt=chunk.chunk_text[:300],
+        ))
+    return results
+
+
+# ── Citation Network ─────────────────────────────────────────────────────────
+
+class CitationNetworkRequest(BaseModel):
+    paper_ids: list[UUID] = Field(..., min_length=2, max_length=20)
+
+
+@router.post("/papers/citation-network")
+def citation_network(
+    body: CitationNetworkRequest,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user),
+) -> dict:
+    """Extract citation relationships between the selected papers."""
+    papers = db.query(models.Paper).filter(models.Paper.id.in_(body.paper_ids)).all()
+    for p in papers:
+        if p.user_id != current_user.id:
+            raise HTTPException(403, "Access denied for one or more papers")
+    return build_citation_network(db, body.paper_ids, current_user.id)

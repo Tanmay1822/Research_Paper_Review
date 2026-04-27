@@ -127,22 +127,22 @@ export default function ChatWindow({
         onDrop={handleDrop}
         className={`flex-shrink-0 border-b px-4 py-3 transition-all duration-150 ${
           dropzoneActive
-            ? "border-yellow-400/40 bg-yellow-400/5"
-            : "border-white/5 bg-[#1a2329]"
+            ? "border-[var(--primary)]/40 bg-[var(--primary)]/10"
+            : "border-[var(--border)] bg-[var(--surface-elevated)]"
         }`}
       >
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-600">
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
           Active Context
         </p>
 
         {selectedPapers.length === 0 ? (
           <div
             className={`flex items-center gap-2 rounded-xl border-2 border-dashed px-4 py-3 transition-colors ${
-              dropzoneActive ? "border-yellow-400/50" : "border-white/10"
+              dropzoneActive ? "border-[var(--primary)]/50" : "border-[var(--border)]"
             }`}
           >
-            <FileText className="h-4 w-4 text-gray-700" />
-            <p className="text-xs text-gray-600">
+            <FileText className="h-4 w-4 text-[var(--muted)]" />
+            <p className="text-xs text-[var(--muted)]">
               {dropzoneActive
                 ? "Drop to add paper to context"
                 : "Drag papers here or use + in the sidebar"}
@@ -153,16 +153,16 @@ export default function ChatWindow({
             {selectedPapers.map((p) => (
               <span
                 key={p.id}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-yellow-400/20 bg-yellow-400/10 py-1 pl-2.5 pr-1.5 text-xs font-medium text-yellow-300"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--primary)]/35 bg-[var(--accent)]/55 py-1 pl-2.5 pr-1.5 text-xs font-medium text-[var(--foreground)]"
               >
-                <FileText className="h-3 w-3 text-yellow-400/70" />
+                <FileText className="h-3 w-3 text-[var(--cta)]" />
                 <span className="max-w-[160px] truncate" title={p.title || p.filename}>
                   {p.title || p.filename}
                 </span>
                 <button
                   type="button"
                   onClick={() => onRemoveFromContext(p.id)}
-                  className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-md text-yellow-400/60 hover:bg-yellow-400/20 hover:text-yellow-300"
+                  className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-md text-[var(--cta)]/80 hover:bg-[var(--primary)]/20 hover:text-[var(--foreground)]"
                   aria-label="Remove from context"
                 >
                   <X className="h-3 w-3" />
@@ -171,7 +171,7 @@ export default function ChatWindow({
             ))}
             {/* Drop-more hint when dragging */}
             {dropzoneActive && (
-              <span className="inline-flex items-center gap-1 rounded-lg border-2 border-dashed border-yellow-400/40 px-3 py-1 text-xs text-yellow-400/60">
+              <span className="inline-flex items-center gap-1 rounded-lg border-2 border-dashed border-[var(--primary)]/45 px-3 py-1 text-xs text-[var(--muted)]">
                 + Drop here
               </span>
             )}
@@ -183,11 +183,11 @@ export default function ChatWindow({
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
         {messages.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-yellow-400/10">
-              <FileText className="h-8 w-8 text-yellow-400/60" />
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--accent)]/60">
+              <FileText className="h-8 w-8 text-[var(--cta)]" />
             </div>
-            <p className="text-base font-semibold text-gray-400">Ask anything about your papers</p>
-            <p className="mt-1 text-sm text-gray-600">
+            <p className="text-base font-semibold text-[var(--foreground)]">Ask anything about your papers</p>
+            <p className="mt-1 text-sm text-[var(--muted)]">
               {paperIds.length === 0
                 ? "Add papers to context using the sidebar →"
                 : "Citations will open the PDF in the right panel"}
@@ -211,9 +211,9 @@ export default function ChatWindow({
 
           {loading && (
             <div className="flex justify-start">
-              <div className="flex items-center gap-3 rounded-2xl border border-white/5 bg-[#1a2329] px-4 py-3">
-                <Loader2 className="h-4 w-4 animate-spin text-yellow-400" />
-                <span className="text-sm text-gray-500">Thinking…</span>
+              <div className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] px-4 py-3">
+                <Loader2 className="h-4 w-4 animate-spin text-[var(--cta)]" />
+                <span className="text-sm text-[var(--muted)]">Thinking…</span>
               </div>
             </div>
           )}
@@ -225,7 +225,7 @@ export default function ChatWindow({
       <div className="flex-shrink-0 px-4 pb-4 pt-2">
         <form
           onSubmit={handleSubmit}
-          className="flex items-end gap-2 rounded-2xl border border-white/10 bg-[#1a2329] px-4 py-3 shadow-lg ring-1 ring-white/5 transition-all focus-within:border-yellow-400/30 focus-within:ring-yellow-400/10"
+          className="flex items-end gap-2 rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] px-4 py-3 shadow-sm ring-1 ring-[var(--accent)]/50 transition-all focus-within:border-[var(--cta)]/30 focus-within:ring-[var(--cta)]/15"
         >
           <textarea
             ref={textareaRef}
@@ -239,13 +239,13 @@ export default function ChatWindow({
                 : "Ask a question… (Enter to send, Shift+Enter for newline)"
             }
             disabled={paperIds.length === 0 || loading}
-            className="min-h-[36px] flex-1 resize-none bg-transparent text-sm text-white placeholder-gray-600 focus:outline-none disabled:opacity-40"
+            className="min-h-[36px] flex-1 resize-none bg-transparent text-sm text-[var(--foreground)] placeholder:text-[var(--muted)] focus:outline-none disabled:opacity-40"
             suppressHydrationWarning
           />
           <button
             type="submit"
             disabled={!input.trim() || paperIds.length === 0 || loading}
-            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-yellow-400 text-[#131b20] transition-all hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--primary)] text-[var(--foreground)] transition-all hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-40"
             suppressHydrationWarning
             aria-label="Send message"
           >
@@ -276,8 +276,8 @@ function MessageBubble({
   if (isUser) {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-yellow-400/15 px-4 py-3 ring-1 ring-yellow-400/20">
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-yellow-50">
+        <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-[var(--primary)]/16 px-4 py-3 ring-1 ring-[var(--primary)]/30">
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--foreground)]">
             {message.content}
           </p>
         </div>
@@ -289,18 +289,18 @@ function MessageBubble({
     <div className="flex justify-start">
       <div className="max-w-[85%] space-y-3">
         {/* AI label */}
-        <p className="ml-1 text-[10px] font-semibold uppercase tracking-wider text-gray-700">
+        <p className="ml-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
           Research Assistant
         </p>
-        <div className="rounded-2xl rounded-tl-sm border border-white/5 bg-[#1a2329] px-4 py-3 shadow-md">
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-200">
+        <div className="rounded-2xl rounded-tl-sm border border-[var(--border)] bg-[var(--surface-elevated)] px-4 py-3 shadow-md">
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--foreground)]">
             {message.content}
           </p>
 
           {/* Citation badges */}
           {message.citations && message.citations.length > 0 && (
-            <div className="mt-4 border-t border-white/5 pt-3">
-              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-700">
+            <div className="mt-4 border-t border-[var(--border)] pt-3">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
                 Sources
               </p>
               <div className="flex flex-wrap gap-2">
@@ -308,7 +308,7 @@ function MessageBubble({
                   <button
                     key={j}
                     onClick={() => onCitationClick(c.source, c.page)}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-yellow-400/20 bg-yellow-400/10 px-2.5 py-1 text-xs font-medium text-yellow-300 transition-all hover:border-yellow-400/40 hover:bg-yellow-400/20 hover:shadow-[0_0_8px_rgba(250,204,21,0.2)]"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--primary)]/30 bg-[var(--accent)]/55 px-2.5 py-1 text-xs font-medium text-[var(--foreground)] transition-all hover:border-[var(--primary)]/50 hover:bg-[var(--accent)]/75"
                   >
                     <FileText className="h-3 w-3" />
                     {c.source} p.{c.page}
@@ -326,7 +326,7 @@ function MessageBubble({
               <button
                 key={i}
                 onClick={() => onSuggestedQuestion(q)}
-                className="w-fit rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 text-left text-xs text-gray-400 transition-all hover:border-yellow-400/25 hover:bg-yellow-400/[0.07] hover:text-yellow-300"
+                className="w-fit rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-left text-xs text-[var(--muted)] transition-all hover:border-[var(--primary)]/35 hover:bg-[var(--accent)]/50 hover:text-[var(--foreground)]"
               >
                 {q}
               </button>

@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -144,6 +144,14 @@ class PaperStatus(str, enum.Enum):
     FAILED = "failed"
 
 
+class ReadingStatus(str, enum.Enum):
+    """Researcher's reading progress for a paper."""
+
+    TO_READ = "to_read"
+    READING = "reading"
+    DONE = "done"
+
+
 class PaperCategoryType(str, enum.Enum):
     """Classification of a paper's type."""
 
@@ -222,6 +230,11 @@ class Paper(Base):
         nullable=True,
         index=True,
     )
+    reading_status: Mapped[ReadingStatus | None] = mapped_column(
+        Enum(ReadingStatus, values_callable=lambda x: [e.value for e in x], name="readingstatus"),
+        nullable=True,
+    )
+    tags: Mapped[list[str] | None] = mapped_column(ARRAY(String(128)), nullable=True)
 
     # Relationships
     user: Mapped["User | None"] = relationship("User", back_populates="papers")

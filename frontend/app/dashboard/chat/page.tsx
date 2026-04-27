@@ -131,7 +131,7 @@ function ChatContent() {
       />
 
       {/* ══════════════ CENTER PANE: Chat ══════════════ */}
-      <div className="flex min-h-0 flex-1 flex-col bg-[#131b20]">
+      <div className="flex min-h-0 flex-1 flex-col bg-[var(--background)]">
         {error && (
           <div className="flex-shrink-0 px-4 pt-3">
             <ErrorAlert message={error} />
@@ -140,7 +140,7 @@ function ChatContent() {
 
         {loadingThread ? (
           <div className="flex flex-1 items-center justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-yellow-400 border-t-transparent" />
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent" />
           </div>
         ) : (
           <ChatWindow
@@ -171,24 +171,24 @@ function ChatContent() {
 
       {/* ══════════════ RIGHT PANE: PDF Viewer (slide-in) ══════════════ */}
       <div
-        className={`flex flex-shrink-0 flex-col border-l border-white/5 bg-[#1a2329] transition-all duration-300 ease-in-out ${
+        className={`flex flex-shrink-0 flex-col border-l border-[var(--border)] bg-[var(--surface-elevated)] transition-all duration-300 ease-in-out ${
           isPdfOpen ? "w-[42%] opacity-100" : "w-0 opacity-0 overflow-hidden"
         }`}
       >
         {isPdfOpen && (
           <>
             {/* PDF pane header */}
-            <div className="flex flex-shrink-0 items-center justify-between border-b border-white/5 px-4 py-3">
+            <div className="flex flex-shrink-0 items-center justify-between border-b border-[var(--border)] px-4 py-3">
               <div className="flex min-w-0 items-center gap-2">
-                <FileText className="h-4 w-4 flex-shrink-0 text-yellow-400" />
-                <p className="truncate text-sm font-medium text-white" title={activePdfTitle}>
+                <FileText className="h-4 w-4 flex-shrink-0 text-[var(--primary)]" />
+                <p className="truncate text-sm font-medium text-[var(--foreground)]" title={activePdfTitle}>
                   {activePdfTitle}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={handleClosePdf}
-                className="ml-3 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-white/5 hover:text-white"
+                className="ml-3 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-[var(--muted)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--foreground)]"
                 aria-label="Close PDF viewer"
               >
                 <X className="h-4 w-4" />
@@ -202,11 +202,11 @@ function ChatContent() {
                   key={`${activePdfUrl}-p${activePage}`}
                   src={pdfSrc}
                   title="Research paper PDF"
-                  className="h-full w-full rounded-xl border border-white/5"
+                  className="h-full w-full rounded-xl border border-[var(--border)]"
                 />
               ) : (
-                <div className="flex h-full items-center justify-center rounded-xl border-2 border-dashed border-white/5">
-                  <p className="text-sm text-gray-600">Loading PDF…</p>
+                <div className="flex h-full items-center justify-center rounded-xl border-2 border-dashed border-[var(--border)]">
+                  <p className="text-sm text-[var(--muted)]">Loading PDF…</p>
                 </div>
               )}
             </div>
@@ -220,7 +220,7 @@ function ChatContent() {
 export default function ChatWorkspacePage() {
   return (
     <Suspense fallback={
-      <div className="flex min-h-0 flex-1 items-center justify-center text-gray-500">Loading…</div>
+      <div className="flex min-h-0 flex-1 items-center justify-center text-[var(--muted)]">Loading…</div>
     }>
       <ChatContent />
     </Suspense>

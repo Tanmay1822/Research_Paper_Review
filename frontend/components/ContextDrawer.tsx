@@ -127,10 +127,10 @@ export default function ContextDrawer({
     papers.filter((p) => p.folder_id === folderId);
 
   return (
-    <aside className="flex w-64 flex-shrink-0 flex-col border-r border-white/5 bg-[#1a2329]">
+    <aside className="flex w-64 flex-shrink-0 flex-col border-r border-[var(--accent)] bg-[var(--nav-bg)]">
       {/* Header */}
-      <div className="flex-shrink-0 border-b border-white/5 px-4 py-4">
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-600">
+      <div className="flex-shrink-0 border-b border-[var(--border)] px-4 py-4">
+        <p className="text-xs font-semibold uppercase tracking-wider text-[var(--nav-fg)]">
           Knowledge Base
         </p>
       </div>
@@ -139,7 +139,7 @@ export default function ContextDrawer({
       <div className="min-h-0 flex-1 overflow-y-auto py-3">
         {loading ? (
           <div className="flex justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin text-gray-600" />
+            <Loader2 className="h-5 w-5 animate-spin text-[var(--nav-fg)]" />
           </div>
         ) : (
           <>
@@ -180,9 +180,9 @@ export default function ContextDrawer({
       </div>
 
       {/* Upload zone */}
-      <div className="flex-shrink-0 border-t border-white/5 p-3">
+      <div className="flex-shrink-0 border-t border-[var(--border)] p-3">
         {uploadError && (
-          <p className="mb-2 rounded-lg border border-red-500/20 bg-red-500/10 px-2 py-1.5 text-xs text-red-400">
+          <p className="mb-2 rounded-lg border border-[var(--danger)]/25 bg-[var(--danger-bg)] px-2 py-1.5 text-xs text-[var(--nav-fg)]">
             {uploadError}
           </p>
         )}
@@ -192,8 +192,8 @@ export default function ContextDrawer({
           onDragLeave={() => setDragOverUpload(false)}
           className={`rounded-xl border-2 border-dashed p-3 text-center transition-colors ${
             dragOverUpload
-              ? "border-yellow-400/50 bg-yellow-400/5"
-              : "border-white/10 hover:border-white/20"
+              ? "border-[var(--cta)] bg-[var(--cta)]/20"
+              : "border-[var(--accent)]/70 hover:border-[var(--cta)]"
           }`}
         >
           <input
@@ -206,11 +206,11 @@ export default function ContextDrawer({
           />
           <label htmlFor="sidebar-upload" className="block cursor-pointer">
             {uploading ? (
-              <Loader2 className="mx-auto mb-1 h-5 w-5 animate-spin text-yellow-400" />
+              <Loader2 className="mx-auto mb-1 h-5 w-5 animate-spin text-[var(--cta)]" />
             ) : (
-              <FileUp className="mx-auto mb-1 h-5 w-5 text-gray-600" />
+              <FileUp className="mx-auto mb-1 h-5 w-5 text-[var(--nav-fg)]" />
             )}
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-[var(--nav-fg)]">
               {uploading ? "Processing…" : "Drop PDF to upload"}
             </p>
           </label>
@@ -254,23 +254,23 @@ function FolderSection({
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left transition-colors hover:bg-white/5"
+        className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left transition-colors hover:bg-[var(--cta)]/20"
       >
         {isExpanded ? (
-          <ChevronDown className="h-3.5 w-3.5 flex-shrink-0 text-gray-600" />
+          <ChevronDown className="h-3.5 w-3.5 flex-shrink-0 text-[var(--nav-fg)]" />
         ) : (
-          <ChevronRight className="h-3.5 w-3.5 flex-shrink-0 text-gray-600" />
+          <ChevronRight className="h-3.5 w-3.5 flex-shrink-0 text-[var(--nav-fg)]" />
         )}
-        <Folder className="h-4 w-4 flex-shrink-0 text-yellow-400/70" />
-        <span className="min-w-0 flex-1 truncate text-sm font-medium text-gray-300">{name}</span>
-        <span className="flex-shrink-0 text-xs text-gray-700">{papers.length}</span>
+        <Folder className="h-4 w-4 flex-shrink-0 text-[var(--cta)]/80" />
+        <span className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--nav-fg)]">{name}</span>
+        <span className="flex-shrink-0 text-xs text-[var(--nav-fg)]/80">{papers.length}</span>
       </button>
 
       {/* Papers list */}
       {isExpanded && (
         <div className="mt-0.5 space-y-0.5 pl-5">
           {papers.length === 0 ? (
-            <p className="px-2 py-2 text-xs text-gray-700">No papers</p>
+            <p className="px-2 py-2 text-xs text-[var(--nav-fg)]/80">No papers</p>
           ) : (
             papers.map((paper) => (
               <PaperItem
@@ -321,26 +321,26 @@ function PaperItem({
       onDragEnd={onDragEnd}
       className={`group flex cursor-grab items-start gap-2 rounded-xl px-2 py-2 transition-all active:cursor-grabbing ${
         isSelected
-          ? "bg-yellow-400/10 ring-1 ring-yellow-400/20"
-          : "hover:bg-white/[0.04]"
+          ? "bg-[var(--cta)]/25 ring-1 ring-[var(--cta)]/40"
+          : "hover:bg-[var(--cta)]/18"
       } ${isDragging ? "opacity-40" : ""}`}
     >
       <FileText
         className={`mt-0.5 h-4 w-4 flex-shrink-0 ${
-          isSelected ? "text-yellow-400" : "text-gray-600 group-hover:text-gray-400"
+          isSelected ? "text-[var(--cta)]" : "text-[var(--nav-fg)] group-hover:text-[var(--cta)]"
         }`}
       />
       <div className="min-w-0 flex-1">
         <p
           className={`truncate text-xs font-medium leading-snug ${
-            isSelected ? "text-yellow-300" : "text-gray-400 group-hover:text-gray-200"
+            isSelected ? "text-[var(--nav-fg)]" : "text-[var(--nav-fg)]/85 group-hover:text-[var(--nav-fg)]"
           }`}
           title={paper.title || paper.filename}
         >
           {paper.title || paper.filename}
         </p>
         {paper.category && (
-          <p className="mt-0.5 truncate text-[10px] text-gray-700">{paper.category}</p>
+          <p className="mt-0.5 truncate text-[10px] text-[var(--nav-fg)]/75">{paper.category}</p>
         )}
       </div>
 
@@ -351,7 +351,7 @@ function PaperItem({
           type="button"
           title="Preview PDF"
           onClick={(e) => { e.stopPropagation(); onPreview(paper.id); }}
-          className="flex h-5 w-5 items-center justify-center rounded-md bg-white/5 text-gray-500 hover:bg-white/10 hover:text-white"
+          className="flex h-5 w-5 items-center justify-center rounded-md bg-[var(--cta)]/18 text-[var(--nav-fg)] hover:bg-[var(--cta)]/40 hover:text-[var(--foreground)]"
         >
           <Eye className="h-3 w-3" />
         </button>
@@ -362,8 +362,8 @@ function PaperItem({
           onClick={(e) => { e.stopPropagation(); onToggleSelect(paper.id); }}
           className={`flex h-5 w-5 items-center justify-center rounded-md transition-colors ${
             isSelected
-              ? "bg-yellow-400/20 text-yellow-400 hover:bg-red-400/20 hover:text-red-400"
-              : "bg-white/5 text-gray-500 hover:bg-yellow-400/20 hover:text-yellow-400"
+              ? "bg-[var(--accent)] text-[var(--nav-fg)] hover:bg-[var(--danger-bg)] hover:text-[var(--danger)]"
+              : "bg-[var(--cta)]/18 text-[var(--nav-fg)] hover:bg-[var(--cta)]/40 hover:text-[var(--foreground)]"
           }`}
         >
           <Plus className={`h-3 w-3 transition-transform ${isSelected ? "rotate-45" : ""}`} />

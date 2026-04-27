@@ -2,15 +2,11 @@
 
 import logging
 
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import Session
-
-from .db import database
 from .routers import analysis, auth, chat, folders, papers, upload
 
 logger = logging.getLogger(__name__)
@@ -53,7 +49,7 @@ def _classify_unhandled_exception(exc: Exception) -> tuple[int, str, str]:
             "database_unavailable",
             "We are having trouble reaching the database. Please try again in a moment.",
         )
-    if "gemini" in msg or "embedding" in msg or "api_key" in msg:
+    if "openai" in msg or "embedding" in msg or "api_key" in msg:
         return (
             502,
             "ai_service_error",
@@ -124,12 +120,3 @@ async def unhandled_exception_handler(_: Request, exc: Exception) -> JSONRespons
 def read_root() -> dict[str, str]:
     """Health check endpoint."""
     return {"status": "ok"}
-
-
-@app.get("/debug/tables")
-def debug_tables(db: Session = Depends(database.get_db)) -> list[str]:
-    """List all public tables (for verifying migrations)."""
-    result = db.execute(
-        text("SELECT tablename FROM pg_tables WHERE schemaname='public'")
-    )
-    return [row[0] for row in result]

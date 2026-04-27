@@ -76,9 +76,9 @@ export default function Sidebar({ papers, onPapersChange }: SidebarProps) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white border-r border-gray-200">
-      <div className="p-3 border-b border-gray-200">
-        <h2 className="text-sm font-semibold text-gray-800">Documents</h2>
+    <div className="flex h-full flex-col border-r border-[var(--border)] bg-[var(--surface-elevated)]">
+      <div className="border-b border-[var(--border)] p-3">
+        <h2 className="text-sm font-semibold text-[var(--foreground)]">Documents</h2>
       </div>
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
         <div
@@ -87,7 +87,7 @@ export default function Sidebar({ papers, onPapersChange }: SidebarProps) {
           onDragLeave={onDragLeave}
           className={`
             border-2 border-dashed rounded-lg p-4 text-center transition-colors
-            ${dragOver ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"}
+            ${dragOver ? "border-[var(--primary)] bg-[var(--accent)]/50" : "border-[var(--border)] hover:border-[var(--primary)]/45"}
           `}
         >
           <input
@@ -100,30 +100,30 @@ export default function Sidebar({ papers, onPapersChange }: SidebarProps) {
           />
           <label htmlFor="pdf-upload" className="cursor-pointer block">
             {uploading ? (
-              <Loader2 className="w-8 h-8 mx-auto text-blue-500 animate-spin mb-2" />
+              <Loader2 className="mx-auto mb-2 h-8 w-8 animate-spin text-[var(--primary)]" />
             ) : (
-              <FileUp className="w-8 h-8 mx-auto text-gray-500 mb-2" />
+              <FileUp className="mx-auto mb-2 h-8 w-8 text-[var(--muted)]" />
             )}
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-[var(--muted)]">
               {uploading ? "Processing…" : "Drop PDF or click to upload"}
             </p>
           </label>
         </div>
         {error && (
-          <p className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded">{error}</p>
+          <p className="rounded bg-[var(--danger-bg)] px-2 py-1 text-xs text-[var(--danger)]">{error}</p>
         )}
         <div className="space-y-2">
           {papers.map((p) => (
             <div
               key={p.id}
-              className="flex items-start gap-2 p-2 rounded-lg bg-gray-50 border border-gray-100"
+              className="flex items-start gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2"
             >
-              <FileText className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+              <FileText className="mt-0.5 h-4 w-4 flex-shrink-0 text-[var(--muted)]" />
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-gray-800 truncate">
+                <p className="truncate text-sm font-medium text-[var(--foreground)]">
                   {p.title || p.filename}
                 </p>
-                <p className="text-xs text-gray-500">{p.category}</p>
+                <p className="text-xs text-[var(--muted)]">{p.category}</p>
               </div>
             </div>
           ))}

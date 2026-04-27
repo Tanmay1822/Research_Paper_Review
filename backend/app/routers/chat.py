@@ -38,6 +38,7 @@ class ChatResponse(BaseModel):
     answer: str
     citations: list[Citation]
     thread_id: str
+    suggested_questions: list[str] = []
 
 
 def _ensure_papers_owned_by_user(
@@ -166,6 +167,7 @@ def chat(
         answer=result.answer,
         citations=citations,
         thread_id=str(thread.id),
+        suggested_questions=result.suggested_questions,
     )
 
 

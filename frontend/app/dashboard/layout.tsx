@@ -92,18 +92,20 @@ export default function DashboardLayout({
               type="text"
               placeholder="Search here..."
               className="w-full rounded-xl border border-white/5 bg-[#131b20] py-2 pl-9 pr-4 text-sm text-gray-300 placeholder-gray-600 focus:border-yellow-400/30 focus:outline-none focus:ring-1 focus:ring-yellow-400/20"
+              suppressHydrationWarning
             />
           </div>
         </div>
 
         {/* Right: Notifications + Logout + Avatar */}
         <div className="ml-auto flex items-center gap-2">
-          <button className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-gray-400 transition-colors hover:bg-white/10 hover:text-white">
+          <button suppressHydrationWarning className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-gray-400 transition-colors hover:bg-white/10 hover:text-white">
             <Bell className="h-4 w-4" />
           </button>
           <button
             onClick={handleLogout}
             title="Logout"
+            suppressHydrationWarning
             className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-gray-400 transition-colors hover:bg-red-400/10 hover:text-red-400"
           >
             <LogOut className="h-4 w-4" />

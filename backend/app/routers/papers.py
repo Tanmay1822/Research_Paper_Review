@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from urllib.parse import quote_plus
+from urllib.request import Request, urlopen
+import json
 import re
 from uuid import UUID
 
@@ -16,6 +19,36 @@ from app.routers.auth import get_current_user
 
 router = APIRouter(prefix="/api", tags=["papers"])
 UPLOADS_DIR = Path(__file__).resolve().parent.parent.parent / "uploads"
+
+
+def _extract_pdf_authors(paper_id: str) -> str | None:
+    """Try to read author string from PDF metadata or first-page heuristic."""
+    pdf_path = UPLOADS_DIR / f"{paper_id}.pdf"
+    if not pdf_path.exists():
+        return None
+    try:
+        from pypdf import PdfReader
+        reader = PdfReader(str(pdf_path))
+        # 1. Try standard PDF metadata
+        if reader.metadata:
+            for key in ("/Author", "/author", "Author"):
+                val = reader.metadata.get(key)
+                if val and str(val).strip():
+                    return str(val).strip()
+        # 2. Heuristic: scan first-page text for "Author" or "Authors" line
+        if reader.pages:
+            text = reader.pages[0].extract_text() or ""
+            for line in text.splitlines():
+                stripped = line.strip()
+                lower = stripped.lower()
+                if lower.startswith("author") and len(stripped) > 8:
+                    # "Authors: John Doe, Jane Smith" → return everything after the colon
+                    after = stripped.split(":", 1)[-1].strip()
+                    if after and len(after) > 2:
+                        return after
+    except Exception:
+        pass
+    return None
 
 
 def _safe_bibtex_key(text: str) -> str:
@@ -55,6 +88,97 @@ class PaperListItem(BaseModel):
     folder_id: str | None
 
 
+class RelatedPaperItem(BaseModel):
+    """External related-paper candidate fetched from internet metadata APIs."""
+
+    title: str
+    authors: str
+    year: str | None
+    venue: str | None
+    doi: str | None
+    url: str | None
+
+
+class RelatedPapersResponse(BaseModel):
+    """Response for external related-paper discovery."""
+
+    source: str
+    query: str
+    papers: list[RelatedPaperItem]
+
+
+def _crossref_fetch_related(title: str, authors: str | None, limit: int = 6) -> list[RelatedPaperItem]:
+    """Fetch related papers from Crossref based on title and optional authors."""
+    query_parts = [title.strip()]
+    if authors and authors.strip():
+        query_parts.append(authors.strip())
+    query = " ".join(query_parts).strip()
+    if not query:
+        return []
+
+    endpoint = (
+        "https://api.crossref.org/works"
+        f"?rows={max(1, min(limit, 10))}"
+        f"&select=DOI,title,author,issued,container-title,URL,score"
+        f"&query.bibliographic={quote_plus(query)}"
+    )
+    req = Request(
+        endpoint,
+        headers={
+            "User-Agent": "research-paper-analysis/1.0 (related-paper-search)",
+            "Accept": "application/json",
+        },
+    )
+    with urlopen(req, timeout=12) as resp:
+        payload = json.loads(resp.read().decode("utf-8"))
+
+    items = payload.get("message", {}).get("items", [])
+    results: list[RelatedPaperItem] = []
+    for item in items:
+        raw_title = item.get("title") or []
+        title_value = raw_title[0].strip() if raw_title and isinstance(raw_title[0], str) else ""
+        if not title_value:
+            continue
+
+        raw_authors = item.get("author") or []
+        author_names: list[str] = []
+        for a in raw_authors[:5]:
+            if not isinstance(a, dict):
+                continue
+            given = str(a.get("given", "")).strip()
+            family = str(a.get("family", "")).strip()
+            name = " ".join(x for x in (given, family) if x).strip()
+            if name:
+                author_names.append(name)
+        authors_value = ", ".join(author_names) if author_names else "Unknown"
+
+        year = None
+        issued = item.get("issued", {})
+        if isinstance(issued, dict):
+            parts = issued.get("date-parts", [])
+            if parts and isinstance(parts, list) and parts[0] and isinstance(parts[0], list):
+                first = parts[0][0] if parts[0] else None
+                if first:
+                    year = str(first)
+
+        container = item.get("container-title") or []
+        venue = container[0].strip() if container and isinstance(container[0], str) else None
+        doi = str(item.get("DOI")).strip() if item.get("DOI") else None
+        url = str(item.get("URL")).strip() if item.get("URL") else None
+
+        results.append(
+            RelatedPaperItem(
+                title=title_value,
+                authors=authors_value,
+                year=year,
+                venue=venue,
+                doi=doi,
+                url=url,
+            )
+        )
+    return results
+
+
 @router.get("/papers", response_model=list[PaperListItem])
 def list_papers(
     db: Session = Depends(database.get_db),
@@ -69,15 +193,21 @@ def list_papers(
     items: list[PaperListItem] = []
     for paper in papers:
         category = "Empirical"
-        if paper.paper_category:
-            category = paper.paper_category.category.value
+        if (
+            paper.paper_category
+            and getattr(paper.paper_category, "category", None) is not None
+        ):
+            raw_category = paper.paper_category.category
+            category = raw_category.value if hasattr(raw_category, "value") else str(raw_category)
+        raw_status = paper.status
+        status = raw_status.value if hasattr(raw_status, "value") else str(raw_status)
         items.append(
             PaperListItem(
                 id=str(paper.id),
                 filename=paper.filename,
                 title=paper.title,
                 category=category,
-                status=paper.status.value,
+                status=status,
                 folder_id=str(paper.folder_id) if paper.folder_id else None,
             )
         )
@@ -98,6 +228,7 @@ class PaperDetailResponse(BaseModel):
     dataset: str | None
     results: str | None
     limitations: str | None
+    authors: str | None
 
 
 @router.get("/papers/{paper_id}", response_model=PaperDetailResponse)
@@ -113,21 +244,58 @@ def get_paper(
     if paper.user_id != current_user.id:
         raise HTTPException(403, "Access denied")
     category = "Empirical"
-    if paper.paper_category:
-        category = paper.paper_category.category.value
+    if (
+        paper.paper_category
+        and getattr(paper.paper_category, "category", None) is not None
+    ):
+        raw_category = paper.paper_category.category
+        category = raw_category.value if hasattr(raw_category, "value") else str(raw_category)
+    raw_status = paper.status
+    status = raw_status.value if hasattr(raw_status, "value") else str(raw_status)
     kc = paper.knowledge_card
     return PaperDetailResponse(
         id=str(paper.id),
         filename=paper.filename,
         title=paper.title,
         category=category,
-        status=paper.status.value,
+        status=status,
         folder_id=str(paper.folder_id) if paper.folder_id else None,
         core_problem=kc.core_problem if kc else None,
         methodology=kc.methodology if kc else None,
         dataset=kc.dataset if kc else None,
         results=kc.results if kc else None,
         limitations=kc.limitations if kc else None,
+        authors=_extract_pdf_authors(str(paper.id)),
+    )
+
+
+@router.get("/papers/{paper_id}/related-online", response_model=RelatedPapersResponse)
+def get_related_papers_online(
+    paper_id: UUID,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user),
+) -> RelatedPapersResponse:
+    """Find related papers from internet sources using title + author metadata."""
+    paper = db.query(models.Paper).filter(models.Paper.id == paper_id).first()
+    if not paper:
+        raise HTTPException(404, "Paper not found")
+    if paper.user_id != current_user.id:
+        raise HTTPException(403, "Access denied")
+
+    title = (paper.title or paper.filename.rsplit(".", 1)[0]).strip()
+    if not title:
+        raise HTTPException(400, "Paper title is missing")
+
+    authors = _extract_pdf_authors(str(paper.id))
+    try:
+        related = _crossref_fetch_related(title=title, authors=authors, limit=6)
+    except Exception as exc:
+        raise HTTPException(502, f"Unable to fetch related papers: {exc}") from exc
+
+    return RelatedPapersResponse(
+        source="Crossref",
+        query=f"{title}{f' | {authors}' if authors else ''}",
+        papers=related,
     )
 
 
@@ -203,6 +371,55 @@ def export_paper_bibtex(
         media_type="application/x-bibtex",
         headers={"Content-Disposition": f'attachment; filename="{bib_name}"'},
     )
+
+
+class ComparisonMatrixRequest(BaseModel):
+    paper_ids: list[UUID] = Field(..., min_length=2, max_length=10)
+
+
+class MatrixRow(BaseModel):
+    id: str
+    title: str | None
+    filename: str
+    category: str
+    authors: str | None
+    core_problem: str | None
+    methodology: str | None
+    dataset: str | None
+    results: str | None
+    limitations: str | None
+
+
+@router.post("/papers/comparison-matrix", response_model=list[MatrixRow])
+def get_comparison_matrix(
+    body: ComparisonMatrixRequest,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user),
+) -> list[MatrixRow]:
+    """Return knowledge-card fields for multiple papers in one call for the matrix view."""
+    rows: list[MatrixRow] = []
+    for pid in body.paper_ids:
+        paper = db.query(models.Paper).filter(models.Paper.id == pid).first()
+        if not paper or paper.user_id != current_user.id:
+            continue
+        kc = paper.knowledge_card
+        category = "Empirical"
+        if paper.paper_category and getattr(paper.paper_category, "category", None) is not None:
+            raw = paper.paper_category.category
+            category = raw.value if hasattr(raw, "value") else str(raw)
+        rows.append(MatrixRow(
+            id=str(paper.id),
+            title=paper.title,
+            filename=paper.filename,
+            category=category,
+            authors=_extract_pdf_authors(str(paper.id)),
+            core_problem=kc.core_problem if kc else None,
+            methodology=kc.methodology if kc else None,
+            dataset=kc.dataset if kc else None,
+            results=kc.results if kc else None,
+            limitations=kc.limitations if kc else None,
+        ))
+    return rows
 
 
 class MovePaperRequest(BaseModel):

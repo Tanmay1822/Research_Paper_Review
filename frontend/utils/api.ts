@@ -22,6 +22,7 @@ export interface PaperDetail extends PaperListItem {
   dataset: string | null;
   results: string | null;
   limitations: string | null;
+  authors: string | null;
 }
 
 export interface ThreadListItem {
@@ -82,6 +83,19 @@ export interface Citation {
 }
 
 
+export interface MatrixRow {
+  id: string;
+  title: string | null;
+  filename: string;
+  category: string;
+  authors: string | null;
+  core_problem: string | null;
+  methodology: string | null;
+  dataset: string | null;
+  results: string | null;
+  limitations: string | null;
+}
+
 export interface ContradictionItem {
   topic: string;
   paper_A_claim: string;
@@ -92,6 +106,21 @@ export interface ContradictionItem {
 export interface ContradictionReportResponse {
   agreements: string[];
   contradictions: ContradictionItem[];
+}
+
+export interface RelatedOnlinePaper {
+  title: string;
+  authors: string;
+  year: string | null;
+  venue: string | null;
+  doi: string | null;
+  url: string | null;
+}
+
+export interface RelatedOnlineResponse {
+  source: string;
+  query: string;
+  papers: RelatedOnlinePaper[];
 }
 
 interface ApiErrorEnvelope {
@@ -289,6 +318,7 @@ export interface ChatResponse {
   answer: string;
   citations: Citation[];
   thread_id?: string;
+  suggested_questions?: string[];
 }
 
 export async function chat(
@@ -355,4 +385,24 @@ export async function fetchPaperBibtexBlob(paperId: string): Promise<Blob> {
     throw await parseApiError(res, "Unable to export BibTeX right now.");
   }
   return res.blob();
+}
+
+export async function fetchRelatedPapersOnline(paperId: string): Promise<RelatedOnlineResponse> {
+  const res = await fetch(`${API_BASE}/api/papers/${paperId}/related-online`, withAuth());
+  if (!res.ok) {
+    throw await parseApiError(res, "Unable to fetch related papers from the internet.");
+  }
+  return res.json();
+}
+
+export async function fetchComparisonMatrix(paperIds: string[]): Promise<MatrixRow[]> {
+  const res = await fetch(`${API_BASE}/api/papers/comparison-matrix`, withAuth({
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ paper_ids: paperIds }),
+  }));
+  if (!res.ok) {
+    throw await parseApiError(res, "Unable to build comparison matrix.");
+  }
+  return res.json();
 }

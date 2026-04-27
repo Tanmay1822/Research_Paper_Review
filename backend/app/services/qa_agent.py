@@ -34,6 +34,7 @@ class SynthesisResult:
 
     answer: str
     citations: list[dict[str, str | int]]
+    suggested_questions: list[str]
 
 
 def _get_llm() -> ChatGoogleGenerativeAI:
@@ -170,9 +171,10 @@ def synthesize_answer(
 
     system = """You are a research assistant. Answer the user's question using ONLY the provided context.
 Your response MUST be valid JSON with this exact schema:
-{"answer": "your answer here", "citations": [{"source": "filename.pdf", "page": 4, "quote": "exact quote from context"}]}
+{"answer": "your answer here", "citations": [{"source": "filename.pdf", "page": 4, "quote": "exact quote from context"}], "suggested_questions": ["Follow-up question 1?", "Follow-up question 2?", "Follow-up question 3?"]}
 - answer: A clear, grounded response. Only state facts present in the context.
 - citations: Array of objects. Each must have source (filename), page (int), quote (exact snippet).
+- suggested_questions: Exactly 3 short, specific follow-up questions a researcher would naturally ask next based on the answer and context.
 Use only filenames and pages that appear in the context. If no specific quote applies, use a short relevant snippet."""
 
     history_str = ""
@@ -197,9 +199,10 @@ Use only filenames and pages that appear in the context. If no specific quote ap
         return SynthesisResult(
             answer=data.get("answer", ""),
             citations=data.get("citations", []),
+            suggested_questions=data.get("suggested_questions", []),
         )
     except json.JSONDecodeError:
-        return SynthesisResult(answer=text, citations=[])
+        return SynthesisResult(answer=text, citations=[], suggested_questions=[])
 
 
 def run_qa(

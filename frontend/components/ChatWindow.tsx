@@ -10,6 +10,7 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   citations?: Citation[];
+  suggestedQuestions?: string[];
 }
 
 interface ChatWindowProps {
@@ -62,28 +63,36 @@ export default function ChatWindow({
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   };
 
-  const handleSubmit = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    const q = input.trim();
+  const sendMessage = async (q: string) => {
     if (!q || loading || paperIds.length === 0) return;
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
     onError("");
-    onMessagesChange([...messages, { role: "user", content: q }]);
+    const withUser = [...messages, { role: "user" as const, content: q }];
+    onMessagesChange(withUser);
     setLoading(true);
     try {
       const res = await chat(q, paperIds, threadId ?? undefined);
       if (res.thread_id) onThreadIdChange(res.thread_id);
       onMessagesChange([
-        ...messages,
-        { role: "user", content: q },
-        { role: "assistant", content: res.answer, citations: res.citations },
+        ...withUser,
+        {
+          role: "assistant" as const,
+          content: res.answer,
+          citations: res.citations,
+          suggestedQuestions: res.suggested_questions ?? [],
+        },
       ]);
     } catch (e) {
       onError(e instanceof Error ? e.message : "We could not send your message right now.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    sendMessage(input.trim());
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -187,13 +196,18 @@ export default function ChatWindow({
         )}
 
         <div className="space-y-6">
-          {messages.map((m, i) => (
-            <MessageBubble
-              key={i}
-              message={m}
-              onCitationClick={onCitationClick}
-            />
-          ))}
+          {messages.map((m, i) => {
+            const isLastAssistant =
+              m.role === "assistant" && i === messages.length - 1 && !loading;
+            return (
+              <MessageBubble
+                key={i}
+                message={m}
+                onCitationClick={onCitationClick}
+                onSuggestedQuestion={isLastAssistant ? sendMessage : undefined}
+              />
+            );
+          })}
 
           {loading && (
             <div className="flex justify-start">
@@ -251,9 +265,11 @@ export default function ChatWindow({
 function MessageBubble({
   message,
   onCitationClick,
+  onSuggestedQuestion,
 }: {
   message: ChatMessage;
   onCitationClick: (source: string, page: number) => void;
+  onSuggestedQuestion?: (q: string) => void;
 }) {
   const isUser = message.role === "user";
 
@@ -302,6 +318,21 @@ function MessageBubble({
             </div>
           )}
         </div>
+
+        {/* Follow-up question chips */}
+        {onSuggestedQuestion && message.suggestedQuestions && message.suggestedQuestions.length > 0 && (
+          <div className="mt-2 flex flex-col gap-1.5">
+            {message.suggestedQuestions.map((q, i) => (
+              <button
+                key={i}
+                onClick={() => onSuggestedQuestion(q)}
+                className="w-fit rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 text-left text-xs text-gray-400 transition-all hover:border-yellow-400/25 hover:bg-yellow-400/[0.07] hover:text-yellow-300"
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

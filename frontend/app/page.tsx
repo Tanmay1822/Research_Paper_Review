@@ -1,21 +1,29 @@
-import DashboardLayout from '@/components/DashboardLayout';
+"use client";
 
-export default function Home() {
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { fetchCurrentUser } from "@/utils/api";
+
+export default function HomePage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchCurrentUser()
+      .then(() => {
+        if (!cancelled) router.replace("/dashboard/library");
+      })
+      .catch(() => {
+        if (!cancelled) router.replace("/login");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
   return (
-    <DashboardLayout>
-      <div className="flex h-full w-full">
-        {/* Left Half: Chat Interface Placeholder */}
-        <div className="w-1/2 border-r border-gray-200 bg-white p-4 flex flex-col justify-center items-center">
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Chat Interface</h2>
-          <p className="text-gray-500">Comming Soon...</p>
-        </div>
-
-        {/* Right Half: PDF Viewer Placeholder */}
-        <div className="w-1/2 bg-gray-50 p-4 flex flex-col justify-center items-center">
-          <h2 className="text-xl font-bold text-gray-800 mb-2">PDF Viewer</h2>
-          <p className="text-gray-500">No Document Selected</p>
-        </div>
-      </div>
-    </DashboardLayout>
+    <div className="flex min-h-screen items-center justify-center bg-[var(--background)]">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent" />
+    </div>
   );
 }

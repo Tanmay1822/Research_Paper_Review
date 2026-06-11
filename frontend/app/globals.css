@@ -1,26 +1,59 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #c6c6d0;
+  --foreground: #0d1d25;
+  --surface: #ffffff;
+  --surface-soft: #d6d6df;
+  --surface-elevated: #f1f1f5;
+  --border: #c0754d;
+  --primary: #d59d80;
+  --primary-hover: #c0754d;
+  --accent: #c0754d;
+  --cta: #d59d80;
+  --muted: #104c64;
+  --success: #104c64;
+  --success-bg: rgba(16, 76, 100, 0.16);
+  --danger: #b6410f;
+  --danger-bg: rgba(182, 65, 15, 0.14);
+  --nav-bg: #104c64;
+  --nav-fg: #c6c6d0;
+  --card-bg: #104c64;
+  --card-fg: #c6c6d0;
+  --table-header: #0d1d25;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-heading), var(--font-body), sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-heading), var(--font-body), sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--primary) 35%, transparent);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--primary) 55%, transparent);
 }

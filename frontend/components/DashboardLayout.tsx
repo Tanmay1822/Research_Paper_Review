@@ -6,14 +6,14 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return (
-        <div className="flex h-screen w-screen overflow-hidden bg-gray-100">
+        <div className="flex h-screen w-screen overflow-hidden bg-[var(--background)]">
             {/* Fixed Sidebar */}
-            <aside className="w-16 flex-shrink-0 bg-gray-900 flex flex-col items-center py-4">
-                <div className="h-8 w-8 bg-blue-500 rounded mb-4" /> {/* Placeholder Logo */}
+            <aside className="flex w-16 flex-shrink-0 flex-col items-center bg-[var(--surface-elevated)] py-4">
+                <div className="mb-4 h-8 w-8 rounded bg-[var(--primary)]" /> {/* Placeholder Logo */}
                 {/* Placeholder Nav Items */}
-                <div className="h-6 w-6 bg-gray-700 rounded mb-2" />
-                <div className="h-6 w-6 bg-gray-700 rounded mb-2" />
-                <div className="h-6 w-6 bg-gray-700 rounded mb-2" />
+                <div className="mb-2 h-6 w-6 rounded bg-[var(--accent)]" />
+                <div className="mb-2 h-6 w-6 rounded bg-[var(--accent)]" />
+                <div className="mb-2 h-6 w-6 rounded bg-[var(--accent)]" />
             </aside>
 
             {/* Main Content */}

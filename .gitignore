@@ -3,8 +3,14 @@
 .idea/
 .vscode/
 
+# Sample / test artifacts
+frontend/upload_response.json
+*.pdf
+!backend/sample.pdf
+
 # Python
 __pycache__/
+backend/uploads/
 *.py[cod]
 *$py.class
 venv/

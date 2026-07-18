@@ -52,8 +52,6 @@ An AI-powered research assistant for managing academic PDFs. Upload papers, get 
 - **Research gap** finder across a paper set
 - **Literature review** generation from selected papers
 
-### Citation network
-- Build a visual **citation graph** from in-library references (LLM-assisted parsing)
 
 ### Authentication
 - Email/password signup and login
